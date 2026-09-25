@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#171a21">
+<title>Anonymiseur de texte</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">🛡️</span>
+    <div>
+      <h1>Anonymiseur de texte</h1>
+      <p class="lede">Données sensibles remplacées par des pseudonymes avant envoi à une IA, vraies valeurs restaurées dans la réponse — texte, tableau ou CSV.</p>
+    </div>
+  </div>
+  <span class="badge-local" title="Aucune requête réseau : tout le traitement a lieu dans cet onglet.">100&nbsp;% local · aucune donnée envoyée</span>
+</header>
+
+<main>
+
+  <!-- ============ ÉTAPE 1 : ANONYMISER ============ -->
+  <section class="card" aria-labelledby="step1-title">
+    <h2 id="step1-title"><span class="step">1</span> Anonymiser</h2>
+
+    <div class="grid-2">
+      <div class="pane">
+        <label class="pane-head" for="input">
+          <span>Texte original</span>
+          <span class="counter" id="input-count">0 car.</span>
+        </label>
+        <textarea id="input" spellcheck="false" placeholder="Coller le texte ici"></textarea>
+        <div class="pane-actions">
+          <button type="button" class="btn btn-primary" data-action="anonymize" title="Raccourci : Ctrl+Entrée">🔒 Anonymiser</button>
+          <button type="button" class="btn" data-action="anonymize-selection" title="Ajoute le passage sélectionné aux termes toujours anonymisés">➕ Anonymiser la sélection</button>
+          <button type="button" class="btn btn-ghost" data-action="clear-input">Vider</button>
+        </div>
+      </div>
+
+      <div class="pane">
+        <label class="pane-head" for="output">
+          <span>Texte anonymisé, à coller dans l'IA</span>
+          <span class="counter" id="output-count">0 car.</span>
+        </label>
+        <textarea id="output" spellcheck="false" readonly placeholder="Le texte anonymisé s'affiche ici"></textarea>
+        <div class="pane-actions">
+          <button type="button" class="btn btn-primary" data-action="copy-output">📋 Copier</button>
+          <span class="hint" id="detect-summary" role="status"></span>
+        </div>
+      </div>
+    </div>
+
+    <details class="options">
+      <summary>Options de détection</summary>
+
+      <div class="opt-row">
+        <fieldset class="mode">
+          <legend>Style de pseudonyme</legend>
+          <label><input type="radio" name="mode" value="placeholder" checked>
+            <span><b>Balises</b> — <code>[PERSONNE_1]</code>, <code>[EMAIL_1]</code><br><small>Le plus fiable : l'IA recopie le marqueur tel quel, y compris dans un tableau ou un CSV.</small></span>
+          </label>
+          <label><input type="radio" name="mode" value="realistic">
+            <span><b>Pseudos réalistes</b> — <code>Camille Fontaine</code>, <code>c.fontaine@exemple.fr</code><br><small>Lecture plus naturelle, mais un nom reformulé par l'IA n'est plus restaurable.</small></span>
+          </label>
+        </fieldset>
+
+        <fieldset class="detectors">
+          <legend>Types détectés</legend>
+          <div id="detector-list"></div>
+        </fieldset>
+
+        <fieldset class="custom">
+          <legend>Termes toujours anonymisés</legend>
+          <textarea id="custom-terms" spellcheck="false" aria-label="Termes toujours anonymisés, un par ligne" placeholder="Un mot par ligne"></textarea>
+          <small>Noms de projet, de client ou de produit non détectés automatiquement.</small>
+        </fieldset>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ TABLE ============ -->
+  <section class="card" aria-labelledby="step2-title">
+    <h2 id="step2-title"><span class="step">2</span> Table de correspondance <span class="pill" id="table-count">0</span></h2>
+    <p class="muted">Conservée dans cet onglet uniquement. Un export permet de la réutiliser après fermeture.</p>
+
+    <div class="pane-actions">
+      <button type="button" class="btn" data-action="export">⬇️ Exporter (.json)</button>
+      <button type="button" class="btn" data-action="import">⬆️ Importer</button>
+      <button type="button" class="btn btn-ghost" data-action="reset">🗑️ Tout effacer</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+      <span class="hint" id="export-state" role="status"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="mapping-table">
+        <thead>
+          <tr><th>Pseudonyme</th><th>Type</th><th>Valeur réelle</th><th><span class="sr-only">Action</span></th></tr>
+        </thead>
+        <tbody id="mapping-body">
+          <tr class="empty"><td colspan="4">Table vide.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ ÉTAPE 3 : DÉSANONYMISER ============ -->
+  <section class="card" aria-labelledby="step3-title">
+    <h2 id="step3-title"><span class="step">3</span> Désanonymiser</h2>
+
+    <div class="grid-2">
+      <div class="pane">
+        <label class="pane-head" for="reply">
+          <span>Réponse de l'IA</span>
+          <span class="counter" id="reply-count">0 car.</span>
+        </label>
+        <textarea id="reply" spellcheck="false" placeholder="Coller la réponse de l'IA ici"></textarea>
+        <div class="pane-actions">
+          <button type="button" class="btn btn-primary" data-action="deanonymize">🔓 Restaurer</button>
+          <button type="button" class="btn" data-action="open-reply" title="Fichier .csv, .tsv, .txt ou .md">📂 Ouvrir un fichier</button>
+          <button type="button" class="btn btn-ghost" data-action="clear-reply">Vider</button>
+          <input type="file" id="reply-file" accept=".csv,.tsv,.txt,.md,text/csv,text/plain,text/markdown" hidden>
+        </div>
+      </div>
+
+      <div class="pane">
+        <label class="pane-head" for="restored">
+          <span>Texte restauré</span>
+          <span class="counter" id="restored-count">0 car.</span>
+        </label>
+        <textarea id="restored" spellcheck="false" readonly placeholder="Le texte final s'affiche ici"></textarea>
+        <div class="pane-actions">
+          <button type="button" class="btn btn-primary" data-action="copy-restored">📋 Copier</button>
+          <button type="button" class="btn" data-action="download-restored" id="download-restored">⬇️ Télécharger</button>
+          <span class="hint" id="restore-summary" role="status"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p><strong>Prudence :</strong> la détection automatique est une aide, pas une garantie. Relire le texte anonymisé avant tout envoi à un service externe.</p>
+  </footer>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Environnement
+.env
+.env.*
+*.local
+
+# Tables de correspondance exportées : elles contiennent les VRAIES données
+table-anonymisation-*.json
+*.mapping.json
+
+# Dépendances / build
+node_modules/
+dist/
+.venv/
+__pycache__/
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
